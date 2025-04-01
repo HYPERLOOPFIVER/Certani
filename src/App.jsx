@@ -31,7 +31,7 @@ function App() {
         <Route path="/signup" element={<Signup />} />
         <Route path="/News" element={<News />} />
         <Route path="/PostUpload" element={<PostUpload />} />
-        <Route path="/Reelupload" element={<ReelsDisplay />} />
+        <Route path="/Reelupload" element={<ReelUpload />} />
         <Route path="/Reels/:id" element={<ReelsDisplay key={window.location.pathname} />} />
         <Route path="/PostIdea" element={<PostIdea />} />
         <Route path="/Reels" element={<Reels />} />

@@ -45,6 +45,8 @@ const Post = () => {
   const [storyCaption, setStoryCaption] = useState('');
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
+  const [lastVisible, setLastVisible] = useState(null);
+const [hasMore, setHasMore] = useState(true);
   
   const navigate = useNavigate();
   const auth = getAuth();
@@ -148,53 +150,111 @@ const Post = () => {
     return shuffledArray;
   };
 
-  const fetchPosts = async () => {
-    try {
-      const postsCollection = collection(db, 'posts');
-      let postsQuery;
-      
-      if (activeFilter === 'following' && followedUsers.length > 0) {
-        postsQuery = query(postsCollection, where('uid', 'in', followedUsers.slice(0, 10)));
-      } else if (activeFilter === 'trending') {
-        // In a real app, you'd have a ranking algorithm. Here we're just simulating
-        postsQuery = query(postsCollection, orderBy('createdAt', 'desc'), limit(10));
-      } else {
-        postsQuery = postsCollection;
-      }
-      
-      const postsSnapshot = await getDocs(postsQuery);
-      const postsList = postsSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-        title: doc.data().title || '',
-        description: doc.data().description || ''
-      }));
-
-      // Different sorting based on active filter
-      let sortedPosts;
-      if (activeFilter === 'trending') {
-        // Sort by likes count (if you had that data)
-        sortedPosts = postsList;
-      } else if (activeFilter === 'following') {
-        sortedPosts = postsList.sort((a, b) => 
-          (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0)
+ // Modified fetch function with pagination
+const fetchPosts = async (loadMore = false) => {
+  try {
+    if (!loadMore) {
+      setLoading(true);
+    }
+    
+    const postsCollection = collection(db, 'posts');
+    const postsLimit = 20; // Number of posts per page
+    let postsQuery;
+    
+    // Build the query based on filter and pagination
+    if (activeFilter === 'following' && followedUsers.length > 0) {
+      if (loadMore && lastVisible) {
+        postsQuery = query(
+          postsCollection,
+          where('uid', 'in', followedUsers.slice(0, 30)),
+          orderBy('createdAt', 'desc'),
+          startAfter(lastVisible),
+          limit(postsLimit)
         );
       } else {
-        sortedPosts = shuffleArray(postsList);
+        postsQuery = query(
+          postsCollection,
+          where('uid', 'in', followedUsers.slice(0, 30)),
+          orderBy('createdAt', 'desc'),
+          limit(postsLimit)
+        );
       }
-      
-      setPosts(sortedPosts);
-      
-      // Fetch likes for posts
-      await fetchLikes(postsList.map(post => post.id));
-      // Fetch saved posts
-      await fetchSavedPosts(postsList.map(post => post.id));
-    } catch (error) {
-      setError('Error fetching posts: ' + error.message);
-    } finally {
-      setLoading(false);
+    } else if (activeFilter === 'trending') {
+      if (loadMore && lastVisible) {
+        postsQuery = query(
+          postsCollection, 
+          orderBy('createdAt', 'desc'), 
+          startAfter(lastVisible),
+          limit(postsLimit)
+        );
+      } else {
+        postsQuery = query(
+          postsCollection, 
+          orderBy('createdAt', 'desc'), 
+          limit(postsLimit)
+        );
+      }
+    } else {
+      // Default feed
+      if (loadMore && lastVisible) {
+        postsQuery = query(
+          postsCollection, 
+          orderBy('createdAt', 'desc'), 
+          startAfter(lastVisible),
+          limit(postsLimit)
+        );
+      } else {
+        postsQuery = query(
+          postsCollection, 
+          orderBy('createdAt', 'desc'), 
+          limit(postsLimit)
+        );
+      }
     }
-  };
+    
+    const postsSnapshot = await getDocs(postsQuery);
+    
+    // Check if we have more posts to load
+    setHasMore(postsSnapshot.docs.length === postsLimit);
+    
+    // Save the last visible document for next pagination
+    if (postsSnapshot.docs.length > 0) {
+      setLastVisible(postsSnapshot.docs[postsSnapshot.docs.length - 1]);
+    } else {
+      setHasMore(false);
+    }
+    
+    const newPosts = postsSnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+      title: doc.data().title || '',
+      description: doc.data().description || ''
+    }));
+    
+    if (loadMore) {
+      setPosts(currentPosts => [...currentPosts, ...newPosts]);
+    } else {
+      setPosts(newPosts);
+    }
+    
+    // Fetch likes and saved posts for the new batch
+    await fetchLikes(newPosts.map(post => post.id));
+    await fetchSavedPosts(newPosts.map(post => post.id));
+    
+  } catch (error) {
+    setError('Error fetching posts: ' + error.message);
+    console.error(error);
+  } finally {
+    setLoading(false);
+  }
+};
+
+// Function to load more posts
+const loadMorePosts = () => {
+  if (hasMore && !loading) {
+    fetchPosts(true);
+  }
+};
 
   const fetchLikes = async (postIds) => {
     if (!currentUser || postIds.length === 0) return;
@@ -422,7 +482,7 @@ const Post = () => {
   };
 
   const handleShare = (postId) => {
-    navigator.clipboard.writeText(`https://yourwebsite.com/post/${postId}`);
+    navigator.clipboard.writeText(`https://certani.netlify.app/post/${postId}`);
     alert('Link copied to clipboard!');
   };
 
@@ -531,7 +591,7 @@ const Post = () => {
     return (
       <div className={styles.loadingContainer}>
         <div className={styles.loadingSpinner}></div>
-        <p className={styles.loadingText}>Loading premium content...</p>
+        <p className={styles.loadingText}>...</p>
       </div>
     );
   }
@@ -555,13 +615,10 @@ const Post = () => {
             <FiSearch size={24} />
           </button>
           <button 
-            className={styles.iconButton} 
-            onClick={() => setShowNotifications(!showNotifications)}
-          >
-            <FiBell size={24} />
-            {notifications.length > 0 && (
-              <span className={styles.notificationBadge}>{notifications.length}</span>
-            )}
+            className={styles.iconButton} >
+              <Link to="/chat" >
+                    <FiSend size={24}/> 
+                  </Link>
           </button>
         </div>
       </header>
@@ -579,31 +636,7 @@ const Post = () => {
         </div>
       )}
       
-      {/* Notifications panel (conditionally rendered) */}
-      {showNotifications && (
-        <div className={styles.notificationsPanel}>
-          <h3 className={styles.notificationHeader}>Notifications</h3>
-          {notifications.length === 0 ? (
-            <p className={styles.noNotifications}>No new notifications</p>
-          ) : (
-            notifications.map(notification => (
-              <div key={notification.id} className={styles.notificationItem}>
-                <img 
-                  src={notification.senderAvatar || "https://via.placeholder.com/32"} 
-                  alt={notification.username || notification.senderId} 
-                  className={styles.notificationAvatar} 
-                />
-                <div className={styles.notificationContent}>
-                  <p>
-                    <strong>{notification.username || notification.senderId}</strong> {notification.content}
-                  </p>
-                  <span className={styles.notificationTime}>{notification.time}</span>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      )}
+    
       
       {/* Content filters */}
       <div className={styles.filterContainer}>
@@ -631,37 +664,7 @@ const Post = () => {
       </div>
 
       {/* Stories Section (Instagram-like) */}
-      <div className={styles.storiesContainer}>
-        <div className={styles.storyItem}>
-          <div 
-            className={styles.yourStory}
-            onClick={() => setShowCreateStoryModal(true)}
-          >
-            <div className={styles.addStoryButton}>
-              <FiPlus size={20} />
-            </div>
-            <img 
-              src={currentUser?.photoURL || "https://via.placeholder.com/60"} 
-              alt="Your Story" 
-              className={styles.storyAvatar} 
-            />
-          </div>
-          <span className={styles.storyUsername}>Your Story</span>
-        </div>
-        
-        {stories.map(story => (
-          <div key={story.id} className={styles.storyItem} onClick={() => handleViewStory(story)}>
-            <div className={`${styles.storyRing} ${story.hasUnreadStory ? styles.unreadStory : ''}`}>
-              <img 
-                src={story.userAvatar || story.avatar || "https://via.placeholder.com/60"} 
-                alt={story.username || story.userId} 
-                className={styles.storyAvatar} 
-              />
-            </div>
-            <span className={styles.storyUsername}>{story.username || story.userId}</span>
-          </div>
-        ))}
-      </div>
+    
 
       {/* Posts Section */}
       <div className={styles.postsContainer}>
@@ -817,23 +820,7 @@ const Post = () => {
       </div>
       
       {/* Fixed bottom navigation */}
-      <div className={styles.bottomNav}>
-        <button className={styles.navButton} onClick={() => navigate('/')}>
-          <FiHome size={24} />
-        </button>
-        <button className={styles.navButton} onClick={() => setShowSearch(!showSearch)}>
-          <FiSearch size={24} />
-        </button>
-        <button className={styles.navButton}>
-          <FiPlus size={24} />
-        </button>
-        <button className={styles.navButton} onClick={() => setShowNotifications(!showNotifications)}>
-          <FiBell size={24} />
-        </button>
-        <button className={styles.navButton} onClick={() => navigate('/profile')}>
-          <FiUser size={24} />
-        </button>
-      </div>
+    
     </div>
   );
 };

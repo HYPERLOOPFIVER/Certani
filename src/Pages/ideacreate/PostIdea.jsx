@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { getFirestore, collection, addDoc } from 'firebase/firestore';
-import { app } from '../../firebase/Firebase'; // Import your Firebase app configuration
+import { getFirestore, collection, addDoc } from 'firebase/firestore';// Import your Fireb ase app configuration
 
 const PostIdea = () => {
   const [title, setTitle] = useState('');

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { getFirestore, collection, getDocs } from 'firebase/firestore';
-import { app } from '../../firebase/Firebase'; // Firebase config should be properly set up
+ // Firebase config should be properly set up
 import { db } from '../../firebase/Firebase'; // Import Firestore instance
 const FetchIdeas = () => {
   const [ideas, setIdeas] = useState([]);

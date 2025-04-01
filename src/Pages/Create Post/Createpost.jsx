@@ -1,77 +1,55 @@
 import React, { useState, useEffect } from 'react';
-import { db, auth } from '../../firebase/Firebase';
-import { collection, addDoc, doc, updateDoc, arrayUnion } from 'firebase/firestore';
-import { onAuthStateChanged } from '../../firebase/Firebase';
-import { Link, useNavigate } from 'react-router-dom';
-import { FiImage, FiX, FiUpload, FiUser } from 'react-icons/fi';
-import { MdOutlineSlowMotionVideo } from 'react-icons/md';
+import { db, auth } from '../../firebase/Firebase'; // Import Firestore and auth instances
+import { collection, addDoc, doc, updateDoc, arrayUnion } from 'firebase/firestore'; // Correct Firestore imports
+import { onAuthStateChanged } from '../../firebase/Firebase'; // Listen to authentication state changes
+import { Link } from 'react-router-dom';
 
+// Cloudinary setup
 const CLOUD_NAME = 'dzf155vhq';
 const UPLOAD_PRESET = 'posts_certano';
 
 const PostUpload = () => {
-  const [caption, setCaption] = useState('');
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
   const [imageFile, setImageFile] = useState(null);
   const [imageUrl, setImageUrl] = useState('');
-  const [previewUrl, setPreviewUrl] = useState('');
   const [error, setError] = useState('');
   const [user, setUser] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const navigate = useNavigate();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
+      if (currentUser) {
+        setUser(currentUser);
+      } else {
+        setUser(null);
+      }
     });
+
     return () => unsubscribe();
   }, []);
 
-  const handleImageChange = (e) => {
+  const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      setImageFile(file);
-      setPreviewUrl(URL.createObjectURL(file));
-    }
-  };
+      setIsUploading(true);
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', UPLOAD_PRESET);
+      formData.append('cloud_name', CLOUD_NAME);
 
-  const handleImageUpload = async () => {
-    if (!imageFile) return;
-    
-    setIsUploading(true);
-    setProgress(0);
-    
-    const formData = new FormData();
-    formData.append('file', imageFile);
-    formData.append('upload_preset', UPLOAD_PRESET);
-    formData.append('cloud_name', CLOUD_NAME);
-
-    try {
-      const xhr = new XMLHttpRequest();
-      xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, true);
-      
-      xhr.upload.onprogress = (e) => {
-        if (e.lengthComputable) {
-          const percentComplete = Math.round((e.loaded / e.total) * 100);
-          setProgress(percentComplete);
-        }
-      };
-      
-      xhr.onload = () => {
-        if (xhr.status === 200) {
-          const data = JSON.parse(xhr.responseText);
-          setImageUrl(data.secure_url);
-          setIsUploading(false);
-        } else {
-          setError('Error uploading image');
-          setIsUploading(false);
-        }
-      };
-      
-      xhr.send(formData);
-    } catch (error) {
-      setError('Error uploading image');
-      setIsUploading(false);
+      try {
+        const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+          method: 'POST',
+          body: formData,
+        });
+        const data = await response.json();
+        setImageUrl(data.secure_url); // Get the uploaded image URL
+        setIsUploading(false);
+      } catch (error) {
+        setError('Error uploading image');
+        setIsUploading(false);
+      }
     }
   };
 
@@ -83,338 +61,256 @@ const PostUpload = () => {
       return;
     }
 
-    if (!caption || !imageUrl) {
-      setError('Caption and image are required');
+    if (!title || !description || !imageUrl) {
+      setError('All fields are required');
       return;
     }
 
     try {
+      // Create a new post in the 'posts' collection with empty likes and comments arrays
       const postRef = await addDoc(collection(db, 'posts'), {
-        caption,
+        title,
+        description,
         image: imageUrl,
         uid: user.uid,
-        username: user.displayName || user.email.split('@')[0],
-        userPhoto: user.photoURL || '',
-        likes: [],
-        comments: [],
         createdAt: new Date(),
+        likes: [], // Initialize empty likes array
+        comments: [], // Initialize empty comments array
+        likeCount: 0, // Initialize like counter
+        commentCount: 0 // Initialize comment counter
       });
 
-      await updateDoc(doc(db, 'users', user.uid), {
-        posts: arrayUnion(postRef.id),
+      // Now, update the user's document to include the new post's ID using arrayUnion
+      const userRef = doc(db, 'users', user.uid); // Get reference to user's document
+      await updateDoc(userRef, {
+        posts: arrayUnion(postRef.id), // Add post ID to user's posts array
       });
 
-      // Reset form
-      setCaption('');
-      setImageFile(null);
-      setImageUrl('');
-      setPreviewUrl('');
-      setError('');
-      
-      // Navigate to home after successful post
-      navigate('/');
+      setTitle(''); // Clear title input
+      setDescription(''); // Clear description input
+      setImageUrl(''); // Clear image URL
+      setError(''); // Clear error
+      alert('Post uploaded successfully');
     } catch (error) {
       setError('Error uploading post: ' + error.message);
     }
   };
 
-  const removeImage = () => {
-    setImageFile(null);
-    setPreviewUrl('');
-    setImageUrl('');
-  };
-
   return (
-    <div className="dark-upload-container">
-      <div className="upload-header">
-        <button onClick={() => navigate(-1)} className="back-button">
-          &times;
-        </button>
-        <h2>New Post</h2>
-        {imageUrl && (
-          <button 
-            onClick={handlePostUpload}
-            className="share-button"
-            disabled={isUploading}
-          >
-            {isUploading ? '...' : 'Share'}
-          </button>
-        )}
-      </div>
+    <div style={{
+      backgroundColor: '#121212',
+      minHeight: '100vh',
+      padding: '40px 20px',
+      color: 'white'
+    }}>
+      <div style={{
+        maxWidth: '700px',
+        margin: '0 auto',
+        backgroundColor: '#1e1e1e',
+        borderRadius: '12px',
+        boxShadow: '0 8px 20px rgba(0, 0, 0, 0.3)',
+        padding: '30px',
+        border: '1px solid #333'
+      }}>
+        <h2 style={{
+          fontSize: '28px',
+          fontWeight: '600',
+          marginBottom: '25px',
+          textAlign: 'center',
+          color: '#f0f0f0',
+          borderBottom: '1px solid #333',
+          paddingBottom: '15px'
+        }}>Create a New Post</h2>
 
-      <div className="upload-content">
-        {!previewUrl ? (
-          <div className="upload-placeholder">
-            <div className="upload-icon">
-              <FiImage size={48} />
-            </div>
-            <p>Select photos to share</p>
-            <label htmlFor="file-upload" className="file-upload-button">
-              Select from gallery
+        {error && (
+          <div style={{
+            backgroundColor: 'rgba(255, 0, 0, 0.1)',
+            color: '#ff6b6b',
+            padding: '12px',
+            borderRadius: '8px',
+            marginBottom: '20px',
+            textAlign: 'center'
+          }}>
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handlePostUpload}>
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', marginBottom: '8px', color: '#ccc' }}>
+              Title
             </label>
             <input
-              id="file-upload"
-              type="file"
-              onChange={handleImageChange}
-              accept="image/*"
-              style={{ display: 'none' }}
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Enter a catchy title"
+              required
+              style={{
+                width: '100%',
+                padding: '14px',
+                border: '1px solid #444',
+                borderRadius: '8px',
+                fontSize: '16px',
+                backgroundColor: '#2d2d2d',
+                color: 'white',
+                outline: 'none',
+              }}
             />
           </div>
-        ) : (
-          <div className="mobile-upload-flow">
-            <div className="image-preview-wrapper">
-              <img src={previewUrl} alt="Preview" className="image-preview" />
-              {isUploading && (
-                <div className="upload-progress">
-                  <div 
-                    className="progress-bar" 
-                    style={{ width: `${progress}%` }}
-                  ></div>
-                </div>
-              )}
-            </div>
-            
-            <div className="caption-section">
-              <div className="user-info">
-                {user?.photoURL ? (
-                  <img src={user.photoURL} alt="User" className="user-avatar" />
-                ) : (
-                  <div className="default-avatar">
-                    <FiUser size={20} />
-                  </div>
-                )}
-                <span>{user?.displayName || user?.email?.split('@')[0]}</span>
-              </div>
-              
-              <textarea
-                value={caption}
-                onChange={(e) => setCaption(e.target.value)}
-                placeholder="Write a caption..."
-                className="caption-input"
-                rows="3"
+
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', marginBottom: '8px', color: '#ccc' }}>
+              Description
+            </label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Tell your story..."
+              required
+              rows="4"
+              style={{
+                width: '100%',
+                padding: '14px',
+                border: '1px solid #444',
+                borderRadius: '8px',
+                fontSize: '16px',
+                backgroundColor: '#2d2d2d',
+                color: 'white',
+                outline: 'none',
+                resize: 'vertical'
+              }}
+            />
+          </div>
+
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', marginBottom: '8px', color: '#ccc' }}>
+              Image
+            </label>
+            <div style={{
+              border: '2px dashed #444',
+              borderRadius: '8px',
+              padding: '25px 15px',
+              textAlign: 'center',
+              cursor: 'pointer',
+              backgroundColor: '#262626'
+            }}>
+              <input
+                type="file"
+                id="fileInput"
+                onChange={handleImageUpload}
+                required
+                style={{
+                  display: 'none'
+                }}
               />
-              
-              {!imageUrl && (
-                <button 
-                  onClick={handleImageUpload}
-                  className="upload-button"
-                  disabled={isUploading}
-                >
-                  {isUploading ? 'Uploading...' : 'Upload'}
-                </button>
-              )}
+              <label htmlFor="fileInput" style={{ cursor: 'pointer' }}>
+                <div style={{ marginBottom: '10px' }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7"></path>
+                    <line x1="16" y1="5" x2="22" y2="5"></line>
+                    <line x1="19" y1="2" x2="19" y2="8"></line>
+                    <circle cx="9" cy="9" r="2"></circle>
+                    <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>
+                  </svg>
+                </div>
+                <p style={{ color: '#aaa' }}>Click to upload your image</p>
+              </label>
+              {isUploading && <p style={{ marginTop: '10px', color: '#888' }}>Uploading...</p>}
             </div>
           </div>
-        )}
-        
-        {error && <div className="error-message">{error}</div>}
+
+          {imageUrl && (
+            <div style={{ marginBottom: '20px', textAlign: 'center' }}>
+              <p style={{ marginBottom: '10px', color: '#ccc' }}>Preview:</p>
+              <img 
+                src={imageUrl} 
+                alt="Uploaded" 
+                style={{ 
+                  maxWidth: '100%', 
+                  borderRadius: '8px', 
+                  maxHeight: '300px',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)' 
+                }} 
+              />
+            </div>
+          )}
+
+          <div style={{ marginTop: '30px', textAlign: 'center' }}>
+            <button
+              type="submit"
+              style={{
+                padding: '14px 30px',
+                backgroundColor: '#007bff',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '16px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                transition: 'transform 0.2s, background-color 0.2s',
+                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+              }}
+              disabled={!user || isUploading}
+              onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#0069d9'}
+              onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#007bff'}
+              onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.98)'}
+              onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
+            >
+              {isUploading ? 'Uploading...' : 'Share Post'}
+            </button>
+          </div>
+          
+          {!user && (
+            <p style={{ 
+              textAlign: 'center', 
+              marginTop: '20px',
+              padding: '12px',
+              backgroundColor: 'rgba(255, 0, 0, 0.1)',
+              borderRadius: '8px',
+              color: '#ff6b6b' 
+            }}>
+              Please log in to create a post
+            </p>
+          )}
+        </form>
       </div>
-      
-      <style jsx>{`
-        .dark-upload-container {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background-color: #121212;
-          color: #e0e0e0;
-          display: flex;
-          flex-direction: column;
-          z-index: 1000;
-        }
-        
-        .upload-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 16px;
-          border-bottom: 1px solid #333;
-          position: sticky;
-          top: 0;
-          background-color: #121212;
-          z-index: 10;
-        }
-        
-        .back-button {
-          background: none;
-          border: none;
-          color: #e0e0e0;
-          font-size: 24px;
-          cursor: pointer;
-          padding: 0;
-        }
-        
-        .upload-header h2 {
-          font-size: 16px;
-          font-weight: 600;
-          margin: 0;
-        }
-        
-        .share-button {
-          background: transparent;
-          border: none;
-          color: #0095f6;
-          font-weight: 600;
-          cursor: pointer;
-          padding: 0;
-          font-size: 16px;
-        }
-        
-        .share-button:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-        
-        .upload-content {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          overflow-y: auto;
-        }
-        
-        .upload-placeholder {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          padding: 20px;
-          text-align: center;
-        }
-        
-        .upload-icon {
-          margin-bottom: 20px;
-          color: #666;
-        }
-        
-        .upload-placeholder p {
-          color: #e0e0e0;
-          font-size: 18px;
-          margin-bottom: 20px;
-        }
-        
-        .file-upload-button {
-          background: #0095f6;
-          color: white;
-          border: none;
-          border-radius: 4px;
-          padding: 12px 24px;
-          font-weight: 600;
-          cursor: pointer;
-          font-size: 14px;
-        }
-        
-        .mobile-upload-flow {
-          display: flex;
-          flex-direction: column;
-          height: 100%;
-        }
-        
-        .image-preview-wrapper {
-          position: relative;
-          background: #000;
-          flex: 1;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          max-height: 60vh;
-        }
-        
-        .image-preview {
-          max-height: 100%;
-          max-width: 100%;
-          object-fit: contain;
-        }
-        
-        .caption-section {
-          padding: 16px;
-          border-top: 1px solid #333;
-        }
-        
-        .user-info {
-          display: flex;
-          align-items: center;
-          margin-bottom: 16px;
-        }
-        
-        .user-avatar, .default-avatar {
-          width: 32px;
-          height: 32px;
-          border-radius: 50%;
-          margin-right: 12px;
-        }
-        
-        .user-avatar {
-          object-fit: cover;
-        }
-        
-        .default-avatar {
-          background: #333;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: #999;
-        }
-        
-        .caption-input {
-          width: 100%;
-          background: transparent;
-          border: none;
-          resize: none;
-          font-size: 14px;
-          color: #e0e0e0;
-          padding: 8px 0;
-          margin-bottom: 16px;
-        }
-        
-        .caption-input:focus {
-          outline: none;
-        }
-        
-        .caption-input::placeholder {
-          color: #666;
-        }
-        
-        .upload-button {
-          width: 100%;
-          background: #0095f6;
-          color: white;
-          border: none;
-          border-radius: 4px;
-          padding: 12px;
-          font-weight: 600;
-          cursor: pointer;
-          font-size: 14px;
-        }
-        
-        .upload-button:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-        
-        .upload-progress {
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          height: 4px;
-          background: rgba(255, 255, 255, 0.1);
-        }
-        
-        .progress-bar {
-          height: 100%;
-          background: #0095f6;
-          transition: width 0.3s ease;
-        }
-        
-        .error-message {
-          color: #ed4956;
-          text-align: center;
-          padding: 16px;
-          font-size: 14px;
-        }
-      `}</style>
+
+      <div style={{ marginTop: '30px', textAlign: 'center' }}>
+        <Link
+          to={'/Reelupload'}
+          style={{
+            display: 'inline-block',
+            padding: '14px 25px',
+            backgroundColor: '#333',
+            color: 'white',
+            border: '1px solid #444',
+            borderRadius: '8px',
+            fontSize: '16px',
+            textAlign: 'center',
+            marginTop: '20px',
+            textDecoration: 'none',
+            fontWeight: 'bold',
+            transition: 'all 0.2s ease',
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.backgroundColor = '#444';
+            e.currentTarget.style.transform = 'translateY(-2px)';
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.backgroundColor = '#333';
+            e.currentTarget.style.transform = 'translateY(0)';
+          }}
+        >
+          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px' }}>
+              <polygon points="23 7 16 12 23 17 23 7"></polygon>
+              <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+            </svg>
+            Post Reel
+          </span>
+        </Link>
+      </div>
     </div>
   );
 };

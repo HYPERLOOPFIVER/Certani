@@ -7,30 +7,30 @@ import { SlMagnifier } from "react-icons/sl";
 import { TiMessageTyping } from "react-icons/ti";
 import { PiFilmReelThin } from "react-icons/pi";
 import { CiCirclePlus } from "react-icons/ci";
-
+import { FiUser } from "react-icons/fi";
+import { FiHome } from "react-icons/fi";
+import { FiSearch } from "react-icons/fi";
+import { FiPlus } from "react-icons/fi";
+import { FiVideo } from "react-icons/fi";
 export default function Navbar() {
   return (
     <nav className={styles.nav}>
       <Link to="/Home" className={styles.link}>
-        <IoMdHome className={styles.icon} /> 
+          <FiHome className={styles.icon} /> 
       </Link>
-      <Link to="/Trending" className={styles.link}>
-        <FaArrowTrendUp className={styles.icon} /> 
-      </Link>
+      
       <Link to="/serch" className={styles.link}>
-        <SlMagnifier className={styles.icon} /> 
+        <FiSearch className={styles.icon} /> 
       </Link>
-      <Link to="/chat" className={styles.link}>
-        <TiMessageTyping className={styles.icon} />
-      </Link>
+    
       <Link to="/Reels/random" className={styles.link}>
-        <PiFilmReelThin className={styles.icon} />
+        <FiVideo className={styles.icon} />
       </Link>
       <Link to="/PostUpload" className={styles.link}>
-        <CiCirclePlus className={styles.icon} /> 
+        <FiPlus className={styles.icon} /> 
       </Link>
       <Link to="/" className={styles.link}>
-        <MdAccountCircle className={styles.icon} /> 
+        <FiUser className={styles.icon} /> 
       </Link>
     </nav>
   );
