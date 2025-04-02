@@ -3,7 +3,7 @@ import { db, auth } from '../../firebase/Firebase'; // Import Firestore and auth
 import { collection, addDoc, doc, updateDoc, arrayUnion } from 'firebase/firestore'; // Correct Firestore imports
 import { onAuthStateChanged } from '../../firebase/Firebase'; // Listen to authentication state changes
 import { Link } from 'react-router-dom';
-
+import { Helmet } from 'react-helmet-async';
 // Cloudinary setup
 const CLOUD_NAME = 'dzf155vhq';
 const UPLOAD_PRESET = 'posts_certano';
@@ -103,6 +103,11 @@ const PostUpload = () => {
       padding: '40px 20px',
       color: 'white'
     }}>
+       <Helmet>
+        <title>India's First Social Media | Lightupswift</title>
+        <meta name="Home" content="Home" />
+      </Helmet>
+     
       <div style={{
         maxWidth: '700px',
         margin: '0 auto',

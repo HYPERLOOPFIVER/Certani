@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /$
+Allow: /profile/
+Allow: /[0-9]+$       # Allows numeric user IDs
+Disallow: /dashboard/
+Disallow: /admin/
+Sitemap: https://lightupswift.netlify.app/sitemap.xml
