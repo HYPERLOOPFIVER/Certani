@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { db } from "../../firebase/Firebase";
 import {
   doc,
@@ -285,9 +286,26 @@ function UserProfile() {
   const filteredMedia = activeTab === 'all' 
     ? media 
     : media.filter(item => item.type === activeTab.slice(0, -1)); // Convert 'posts' to 'post', etc.
+  
+  // Generate SEO metadata
+  const getPageTitle = () => {
+    if (loading) return "Loading Profile...";
+    if (error) return "Profile Not Found";
+    return `${user?.name || "User"}'s Profile | Lightupswift`;
+  };
+
+  const getPageDescription = () => {
+    if (loading || error) return "View user profile and content";
+    return `Check out ${user?.name || "User"}'s profile with ${media.length} Lightupswift ${user?.bio || ""}`;
+  };
 
   if (loading && !user) return (
     <div className="loading-container">
+      <Helmet>
+        <title>Loading Profile...</title>
+        <meta name="description" content="Loading user profile" />
+        <meta name="robots" content="noindex" />
+      </Helmet>
       <div className="loading-spinner"></div>
       <p>Loading profile...</p>
     </div>
@@ -295,6 +313,11 @@ function UserProfile() {
 
   if (error && !user) return (
     <div className="error-container">
+      <Helmet>
+        <title>Profile Not Found</title>
+        <meta name="description" content="User profile could not be found" />
+        <meta name="robots" content="noindex" />
+      </Helmet>
       <p className="error-message">{error}</p>
       <button onClick={() => navigate(-1)} className="back-button">Go Back</button>
     </div>
@@ -302,6 +325,36 @@ function UserProfile() {
 
   return (
     <div className="user-profile-container">
+      <Helmet>
+        <title>{getPageTitle()}</title>
+        <meta name="description" content={getPageDescription()} />
+        <meta property="og:title" content={getPageTitle()} />
+        <meta property="og:description" content={getPageDescription()} />
+        <meta property="og:type" content="profile" />
+        <meta property="og:url" content={window.location.href} />
+        {user?.profileImage && <meta property="og:image" content={user.profileImage} />}
+        <meta property="profile:username" content={user?.name} />
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content={getPageTitle()} />
+        <meta name="twitter:description" content={getPageDescription()} />
+        {user?.profileImage && <meta name="twitter:image" content={user.profileImage} />}
+        <link rel="canonical" href={window.location.href} />
+        {/* Structured data for profile */}
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "ProfilePage",
+            "mainEntity": {
+              "@type": "Person",
+              "name": user?.name || "User",
+              "description": user?.bio || "",
+              "image": user?.profileImage,
+              "identifier": userId
+            }
+          })}
+        </script>
+      </Helmet>
+
       <div className="profile-card">
         <div className="profile-header">
           <div className="profile-image-container">
@@ -314,7 +367,7 @@ function UserProfile() {
           
           <div className="profile-info">
             <div className="profile-name-actions">
-              <h2>{user?.name || "User"}</h2>
+              <h1 className="profile-name">{user?.name || "User"}</h1>
               
               {isOwner ? (
                 <button 

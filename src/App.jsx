@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { HelmetProvider } from "react-helmet-async";
 import Navbar from "./Componenets/Navbar/Nav";
 import Home from "./Pages/Home/Home";
 import Trending from "./Pages/Trending/Trending";
@@ -21,27 +22,29 @@ function App() {
   const currentUser = { id: "exampleId", name: "Test User" }; // Replace with actual user
 
   return (
-    <Router>
-      <Navbar />
-      <Routes>
-        <Route path="/" element={<Login />} />
-        <Route path="/Home" element={<Home />} />
-        <Route path="/Trending" element={<Trending />} />
-        <Route path="/search" element={<SearchPage />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/News" element={<News />} />
-        <Route path="/PostUpload" element={<PostUpload />} />
-        <Route path="/Reelupload" element={<ReelUpload />} />
-        <Route path="/Reels/:id" element={<ReelsDisplay key={window.location.pathname} />} />
-        <Route path="/PostIdea" element={<PostIdea />} />
-        <Route path="/Reels" element={<Reels />} />
-        <Route path="/chat" element={<ChatPage />} />
-        <Route path="/serch" element={<SearchUsers />} />
-        <Route path="/profile/:userId" element={<UserProfile currentUser={currentUser} />} />
-        <Route path="/FetchIdeas" element={<FetchIdeas />} />
-        <Route path="/prof" element={<AllUsers />} />
-      </Routes>
-    </Router>
+    <HelmetProvider>
+      <Router>
+        <Navbar />
+        <Routes>
+          <Route path="/" element={<Login />} />
+          <Route path="/Home" element={<Home />} />
+          <Route path="/Trending" element={<Trending />} />
+          <Route path="/search" element={<SearchPage />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/News" element={<News />} />
+          <Route path="/PostUpload" element={<PostUpload />} />
+          <Route path="/Reelupload" element={<ReelUpload />} />
+          <Route path="/Reels/:id" element={<ReelsDisplay key={window.location.pathname} />} />
+          <Route path="/PostIdea" element={<PostIdea />} />
+          <Route path="/Reels" element={<Reels />} />
+          <Route path="/chat" element={<ChatPage />} />
+          <Route path="/serch" element={<SearchUsers />} />
+          <Route path="/profile/:userId" element={<UserProfile currentUser={currentUser} />} />
+          <Route path="/FetchIdeas" element={<FetchIdeas />} />
+          <Route path="/prof" element={<AllUsers />} />
+        </Routes>
+      </Router>
+    </HelmetProvider>
   );
 }
 

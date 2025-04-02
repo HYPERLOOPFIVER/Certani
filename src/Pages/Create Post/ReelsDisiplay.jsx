@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { db } from '../../firebase/Firebase';
 import { collection, getDocs, updateDoc, doc, increment, arrayUnion, arrayRemove, getDoc } from 'firebase/firestore';
 import { FaHeart, FaRegHeart, FaCommentAlt, FaShare, FaBookmark, FaRegBookmark, FaVolumeMute, FaVolumeUp, FaUserCircle, FaEllipsisH, FaMusic, FaPlay, FaPause, FaDice, FaRandom } from 'react-icons/fa';
@@ -525,9 +526,58 @@ const ReelsDisplay = () => {
     return userProfile ? (userProfile.displayName || userProfile.username || userProfile.name || 'User') : 'User';
   };
 
+  // Generate SEO metadata for the current reel
+  const generateSEOMetadata = () => {
+    if (!reels.length || currentReelIndex >= reels.length) {
+      return {
+        title: "Reels | Watch Short Videos",
+        description: "Discover and watch short videos from creators around the world.",
+        keywords: "reels, short videos, video content, trending videos",
+        ogTitle: "Reels | Watch Short Videos",
+        ogDescription: "Discover and watch short videos from creators around the world.",
+        ogUrl: window.location.href,
+        twitterTitle: "Reels | Watch Short Videos",
+        twitterDescription: "Discover and watch short videos from creators around the world."
+      };
+    }
+
+    const currentReel = reels[currentReelIndex];
+    const userName = getUserDisplayName(currentReel.userId);
+    
+    // Build hashtags string for keywords
+    const hashtagsStr = currentReel.hashtags 
+      ? currentReel.hashtags.join(', ') 
+      : '';
+      
+    // Build title with reel title or description
+    const reelTitle = currentReel.title || 
+                      (currentReel.description ? 
+                        (currentReel.description.length > 60 ? 
+                          currentReel.description.substring(0, 57) + '...' : 
+                          currentReel.description) : 
+                        'Watch this reel');
+    
+    return {
+      title: `${reelTitle} | ${userName} on Lightupswift`,
+      description: currentReel.description || `Watch this amazing video from ${userName}`,
+      keywords: `reels, short videos, ${userName}, ${hashtagsStr}`,
+      ogTitle: reelTitle,
+      ogDescription: currentReel.description || `Watch this amazing video from ${userName}`,
+      ogUrl: window.location.href,
+      twitterTitle: reelTitle,
+      twitterDescription: currentReel.description || `Watch this amazing video from ${userName}`
+    };
+  };
+
+  const seoData = generateSEOMetadata();
+
   if (isLoading) {
     return (
       <div className="loading-container">
+        <Helmet>
+          <title>Loading Reels...</title>
+          <meta name="description" content="Loading amazing short videos..." />
+        </Helmet>
         <CgSpinner className="loading-spinner" />
         <p>Loading reels...</p>
       </div>
@@ -537,6 +587,10 @@ const ReelsDisplay = () => {
   if (reels.length === 0) {
     return (
       <div className="no-reels-container">
+        <Helmet>
+          <title>No Reels Found</title>
+          <meta name="description" content="No reels found. Be the first to create a reel!" />
+        </Helmet>
         <div className="no-reels-content">
           <h2>No reels found</h2>
           <p>Be the first to create a reel!</p>
@@ -550,6 +604,28 @@ const ReelsDisplay = () => {
 
   return (
     <div className="reels-page">
+      <Helmet>
+        <title>{seoData.title}</title>
+        <meta name="description" content={seoData.description} />
+        <meta name="keywords" content={seoData.keywords} />
+        
+        {/* Open Graph tags */}
+        <meta property="og:title" content={seoData.ogTitle} />
+        <meta property="og:description" content={seoData.ogDescription} />
+        <meta property="og:url" content={seoData.ogUrl} />
+        <meta property="og:type" content="video.other" />
+        {currentReel.thumbnailUrl && <meta property="og:image" content={currentReel.thumbnailUrl} />}
+        
+        {/* Twitter Card tags */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={seoData.twitterTitle} />
+        <meta name="twitter:description" content={seoData.twitterDescription} />
+        {currentReel.thumbnailUrl && <meta name="twitter:image" content={currentReel.thumbnailUrl} />}
+        
+        {/* Canonical URL */}
+        <link rel="canonical" href={`${window.location.origin}/reels/${currentReel.id}`} />
+      </Helmet>
+      
       <div className="reel-container" ref={reelContainerRef}>
         <div className={`reel-item ${transition ? 'transitioning' : ''}`}>
           <video
@@ -616,7 +692,7 @@ const ReelsDisplay = () => {
             </div>
           </div>
           
-          {/* Random Reel Button - NEW FEATURE */}
+          {/* Random Reel Button */}
           <div className="random-reel-button" onClick={(e) => {
             e.stopPropagation();
             loadRandomReel();
@@ -665,7 +741,7 @@ const ReelsDisplay = () => {
                   <li>Not interested</li>
                   <li>Copy link</li>
                   <li>Share to...</li>
-                  <li onClick={loadRandomReel}>Show random reel</li> {/* NEW MENU OPTION */}
+                  <li onClick={loadRandomReel}>Show random reel</li>
                 </ul>
               </div>
             )}
