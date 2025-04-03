@@ -120,7 +120,7 @@ const LoginPage = () => {
             textShadow: '0 4px 15px rgba(110, 104, 250, 0.3)',
             marginBottom: '10px',
             letterSpacing: '1px'
-          }}>CERTANO</h1>
+          }}>lightupswift</h1>
           <h2 style={{
             fontSize: '20px',
             color: '#a9a9b9',
@@ -128,7 +128,7 @@ const LoginPage = () => {
             fontWeight: '300',
             letterSpacing: '5px',
             textTransform: 'uppercase'
-          }}>Premium Social Experience</h2>
+          }}>India Ka khud Ka Instagram</h2>
           <p style={{
             fontSize: '16px',
             color: '#6e68fa',
@@ -136,7 +136,7 @@ const LoginPage = () => {
             marginTop: '10px',
             letterSpacing: '1px',
             opacity: '0.9'
-          }}>ELEVATE YOUR CONNECTIONS</p>
+          }}>Proudly Made In India</p>
         </div>
 
         <div style={{
@@ -517,7 +517,7 @@ const LoginPage = () => {
                   fontWeight: '600'
                 }}>
                   <span style={{ background: 'linear-gradient(to right, #6e68fa, #c2a0fd)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                    Welcome to Certano
+                    Swagat To Lightupswift
                   </span>
                 </h2>
 
