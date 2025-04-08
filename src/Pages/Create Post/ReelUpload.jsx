@@ -5,8 +5,8 @@ import { onAuthStateChanged } from '../../firebase/Firebase';
 import { Link } from 'react-router-dom';
 
 // Cloudinary setup
-const CLOUD_NAME = 'dzf155vhq';
-const UPLOAD_PRESET = 'reels_certano';
+const CLOUD_NAME = 'dfzmg1jtd';
+const UPLOAD_PRESET = 'Prep';
 
 const ReelUpload = () => {
   const [caption, setCaption] = useState('');
