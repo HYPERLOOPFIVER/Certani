@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 
 // Cloudinary setup
 const CLOUD_NAME = 'dfzmg1jtd';
-const UPLOAD_PRESET = 'Prep';
+const UPLOAD_PRESET = 'ml_default';
 
 const ReelUpload = () => {
   const [caption, setCaption] = useState('');
