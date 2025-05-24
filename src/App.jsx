@@ -23,27 +23,9 @@ function App() {
 
   return (
     <HelmetProvider>
-      <Router>
-        <Navbar />
-        <Routes>
-          <Route path="/" element={<Login />} />
-          <Route path="/Home" element={<Home />} />
-          <Route path="/Trending" element={<Trending />} />
-          <Route path="/search" element={<SearchPage />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/News" element={<News />} />
-          <Route path="/PostUpload" element={<PostUpload />} />
-          <Route path="/Reelupload" element={<ReelUpload />} />
-          <Route path="/Reels/:id" element={<ReelsDisplay key={window.location.pathname} />} />
-          <Route path="/PostIdea" element={<PostIdea />} />
-          <Route path="/Reels" element={<Reels />} />
-          <Route path="/chat" element={<ChatPage />} />
-          <Route path="/serch" element={<SearchUsers />} />
-          <Route path="/profile/:userId" element={<UserProfile currentUser={currentUser} />} />
-          <Route path="/FetchIdeas" element={<FetchIdeas />} />
-          <Route path="/prof" element={<AllUsers />} />
-        </Routes>
-      </Router>
+<>
+  <h1>ZFuck U bitch sv</h1>
+</>
     </HelmetProvider>
   );
 }
