@@ -70,10 +70,10 @@ const gamesList = [
   },
   {
     id: 9,
-    name: 'Skribbl.io',
-    url: 'https://skribbl.io',
-    description: 'Draw a word and let others guess it before the time runs out.',
-    category: 'Drawing',
+    name: 'Minecraft',
+    url: 'https://g.eags.us/eaglercraft/',
+    description: 'The famous sandbox game where you can build, explore, and survive.',
+    category: 'Sandbox',
     image: 'https://skribbl.io/res/og_image.png'
   },
   {
