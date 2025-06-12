@@ -15,7 +15,7 @@ export default function Home() {
       
       <iframe 
         style={{ borderRadius: "12px" }} 
-        src="https://open.spotify.com/embed/track/6qrifdo7QINdPQr80IelGi?utm_source=generator" 
+        src="https://open.spotify.com/embed/track/3oEkAQ5toT682srK2zTusi?utm_source=generator&theme=0" 
         width="100%" 
         height="352" 
         frameBorder="0" 
@@ -23,7 +23,6 @@ export default function Home() {
         allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
         loading="lazy"
       />
-      
       <Post />
     </>
   )
